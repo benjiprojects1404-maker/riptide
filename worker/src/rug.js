@@ -112,7 +112,7 @@ export async function checkPools(env, ts, rpcBatch, endpoints, extra = []) {
     }
     states.push({ w, price, liq });
     const prev = await env.DB.prepare(`SELECT price, liq FROM pool_state WHERE pool = ? AND pair = ? ORDER BY ts DESC LIMIT 1`).bind(w.pool, w.pair).first();
-    if (prev) {
+    if (prev && !w.noAlarm) { // noAlarm pools are read for prices only
       if (prev.liq > 0 && liq <= 0) events.push({ w, kind: "pool_empty", change: -1, before: prev.liq, after: liq });
       else if (prev.liq > 0 && liq / prev.liq - 1 <= -LIQ_DROP && (w.kind === "v3" || steady(prev.price, price))) events.push({ w, kind: "liquidity_drop", change: liq / prev.liq - 1, before: prev.liq, after: liq });
       if (prev.price > 0 && price && price / prev.price - 1 <= -PRICE_DROP) events.push({ w, kind: "price_drop", change: price / prev.price - 1, before: prev.price, after: price });

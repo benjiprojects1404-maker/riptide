@@ -17,6 +17,8 @@ import { ensureFazeSchema, scanFaze, graduatedWatch } from "./faze.js";
 import { CHAIN, NATIVE, USDC, USDC_DEC, QUOTER, QUOTER_V4, SIZES, GAS_UNITS, COINBASE_FEE, RETENTION_DAYS, PAIRS, VENUE_PAIRS, FAZE } from "./config.js";
 
 export { PAIRS, VENUE_PAIRS };
+// Pairs that are logged and shown but can never count as a trade (see watchOnly in config.js).
+export const WATCH_ONLY = new Set(VENUE_PAIRS.filter(p => p.watchOnly).map(p => p.id));
 const QUOTE_SELECTOR = "0xc6a5026a"; // quoteExactInputSingle((address,address,uint256,uint24,uint160))
 const V4_SELECTOR = "0xaa9d21cb"; // quoteExactInputSingle(((address,address,uint24,int24,address),bool,uint128,bytes))
 const TAG = CHAIN.name.toLowerCase() + ": "; // prefix for chain errors in the stored rows
@@ -284,7 +286,7 @@ async function api(url, env) {
 
   if (p === "/api/latest") {
     const r = await cached("latest", 30, () => env.DB.prepare(`SELECT * FROM samples WHERE ts = (SELECT MAX(ts) FROM samples) ORDER BY pair, size`).all());
-    return json({ rows: r.results, pairs: PAIRS.map(({ id, ref, sym, cexFee, poolFee }) => ({ id, ref, sym, cexFee, poolFee })),
+    return json({ rows: r.results, pairs: PAIRS.map(({ id, ref, sym, cexFee, poolFee }) => ({ id, ref, sym, cexFee, poolFee })), watchOnly: [...WATCH_ONLY],
       rugAlarm: { priceDrop: PRICE_DROP, liquidityDrop: LIQ_DROP, pauseMinutes: PAUSE_MIN },
       chain: { name: CHAIN.name, chainId: CHAIN.chainId, explorer: CHAIN.explorer || null }, faze: !!FAZE });
   }
@@ -376,6 +378,7 @@ export default {
       const events = await checkPools(env, ts, rpcBatch, endpoints, extra).catch(e => { console.log("rug check failed: " + (e.message || e)); return []; });
       const paused = await pausedPairs(env, ts);
       for (const r of rows) { const p = paused.get(r.pair); if (p) { r.alert = "paused: " + p.kind; r.would_trade = 0; } else r.alert = null; }
+      for (const r of rows) if (WATCH_ONLY.has(r.pair)) { r.would_trade = 0; r.alert = r.alert || "watch only"; }
       await store(env, rows);
       const errs = [...new Set(rows.map(r => r.error).filter(Boolean))];
       console.log(`riptide: saved ${rows.length} rows` + (errs.length ? `; issues: ${errs.join(" | ")}` : "; all sources ok")

@@ -44,6 +44,8 @@ export const PAIRS = [
 // Same-chain pairs: the same token in two or more pools. Riptide buys in the "home" pool and sells the same tokens
 // in each other pool (and the reverse), using chained real quotes. For tokens with no exchange listing.
 // v3 venues: { kind: "v3", fee }. v4 venues: { kind: "v4", quote, qdec, fee, tickSpacing, hooks }.
+// watchOnly: true logs and shows the pair but it never counts as a trade (no hits, no paper result). Use it when
+// one side is too shallow to give a meaningful price. FAZE is watch-only: its plain v4 pool is too thin at $1,000.
 // ARGUS: home is the Uniswap v3 1% pool; the others are the v4 ARGUS/USDC pools with real liquidity and sane fees.
 // FAZE: home is Faze's own graduated pool (native USDC against FAZE, through Faze's launchpad hook);
 // the other is the deepest plain v4 FAZE/USDC pool.
@@ -54,13 +56,14 @@ export const VENUE_PAIRS = [
     home: { kind: "v3", fee: 10000, label: "v3 1%" },
     others: [ { kind: "v4", quote: USDC, qdec: 6, fee: 9850, tickSpacing: 99, hooks: ZERO_HOOK, label: "v4 0.985%" },
               { kind: "v4", quote: USDC, qdec: 6, fee: 40000, tickSpacing: 200, hooks: ZERO_HOOK, label: "v4 4%" } ] },
-  { id: "FAZE", token: "0x394d38f807ee0027a182216f5e67a15ae441fa2e", dec: 18,
+  { id: "FAZE", token: "0x394d38f807ee0027a182216f5e67a15ae441fa2e", dec: 18, watchOnly: true,
     home: { kind: "v4", quote: NATIVE, qdec: 18, fee: 0, tickSpacing: 200, hooks: FAZE_HOOK, label: "Faze pool" },
     others: [ { kind: "v4", quote: USDC, qdec: 6, fee: 50000, tickSpacing: 100, hooks: ZERO_HOOK, label: "v4 5%" } ] },
 ];
 
 // Rug alarm watch list: every pool to read each minute. v3 pools by address; v4 pools by pool id.
 // quote/qdec default to USDC/USDC_DEC. show: true lists the coin in the dashboard's coin watch table.
+// noAlarm: true reads the pool for prices but never raises alarms (FAZE's pools, as FAZE is watch-only).
 export const WATCH = [
   { pair: "cirBTC", pool: "v3 0.01%", kind: "v3", address: "0x82916bee18fcef517b26c72d7cb5f13694e1db41", token: "0x171a4217b86a807a64eb94757db6849fb4bdbaa0", dec: 8 },
   { pair: "EURC",   pool: "v3 0.05%", kind: "v3", address: "0x6fd5f2fb831940dcd61a98c5b3acb7d8c6f3bfc1", token: "0xbef5f6d51cb62b58e6a8f77868681825c6fe21c1", dec: 6 },
@@ -70,8 +73,8 @@ export const WATCH = [
   { pair: "ARGUS",  pool: "v4 4%",    kind: "v4", id: "0xebde8959fac1a0a1f837189e7f00f40566f4c1fc6efa3b3c987222222fd31455", token: "0xece5ca8bf9220718e5727754026757512212cb3c", dec: 18 },
   // Faze (faze.fun) coins. Their main pools are the graduated Faze pools: native USDC (18 decimals) against the coin,
   // through Faze's launchpad hook, which takes the trading fee. Pool ids checked on Arc mainnet, 2 Nov 2026.
-  { pair: "FAZE",   pool: "Faze pool", kind: "v4", id: "0xd9133187331e20885fd1b4ff2f18b892f94793ddaf808b1db6d4ef29ca58b943", token: "0x394d38f807ee0027a182216f5e67a15ae441fa2e", dec: 18, quote: NATIVE, qdec: 18, faze: true },
-  { pair: "FAZE",   pool: "v4 5%",     kind: "v4", id: "0xcb4925117715e6983ee6e03d491d90bbc498776b761714c447a9ea80265ca846", token: "0x394d38f807ee0027a182216f5e67a15ae441fa2e", dec: 18 },
+  { pair: "FAZE",   pool: "Faze pool", kind: "v4", id: "0xd9133187331e20885fd1b4ff2f18b892f94793ddaf808b1db6d4ef29ca58b943", token: "0x394d38f807ee0027a182216f5e67a15ae441fa2e", dec: 18, quote: NATIVE, qdec: 18, faze: true, noAlarm: true },
+  { pair: "FAZE",   pool: "v4 5%",     kind: "v4", id: "0xcb4925117715e6983ee6e03d491d90bbc498776b761714c447a9ea80265ca846", token: "0x394d38f807ee0027a182216f5e67a15ae441fa2e", dec: 18, noAlarm: true },
   // ArcStocks (ASTOCK), added 4 Nov 2026: no exchange listing and one Uniswap v4 ASTOCK/USDC pool, so it is watched
   // (price, liquidity, rug alarm) rather than compared. Pool and quote currency checked with scripts/check-pool.js.
   // show: listed in the dashboard's coin watch table.

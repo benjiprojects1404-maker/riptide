@@ -53,6 +53,12 @@ Dashboard: open `dashboard/index.html?api=<your Worker address>` (the weekly pag
 
 Free tier is enough: roughly 10,000–15,000 rows a day with the shipped pairs, 30 days kept.
 
+### Updating a Riptide that's already running
+
+Deploying with the same Worker name (`riptide`) and the same D1 database replaces the code and keeps the data and
+any secrets. Look up the database ID with `npx wrangler d1 list`, put it in `wrangler.toml`, then `npx wrangler deploy`.
+The schema upgrades itself on the first run.
+
 ### A private RPC (optional)
 
 Cloudflare's servers are shared, so public RPCs sometimes rate-limit them. Give the Worker its own endpoint
