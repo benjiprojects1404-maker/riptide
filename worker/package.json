@@ -1,0 +1,5 @@
+{
+  "name": "riptide-worker",
+  "private": true,
+  "type": "module"
+}
