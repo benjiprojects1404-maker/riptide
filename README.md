@@ -62,7 +62,11 @@ Cloudflare's servers are shared, so public RPCs sometimes rate-limit them. Give 
 npx wrangler secret put RPC_URL          # stored encrypted in Cloudflare; never commit it
 ```
 
-The public RPC in `config.js` stays as the fallback. (`ARC_RPC_URL` from older deployments still works.)
+The Worker runs every minute, so it makes a lot of calls (about 100,000 a day with the default pairs). To keep a
+free plan from running out, the public RPC in `config.js` is tried first and `RPC_URL` is only used when the
+public RPC fails. To use your own endpoint first instead (for example on a paid plan), set a variable
+`PRIVATE_RPC_FIRST` to `1` in `wrangler.toml` under `[vars]` or in the dashboard. (`ARC_RPC_URL` from older
+deployments still works.)
 
 ## Pointing it at another chain
 
