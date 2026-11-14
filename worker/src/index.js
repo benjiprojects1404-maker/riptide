@@ -22,8 +22,13 @@ export const WATCH_ONLY = new Set(VENUE_PAIRS.filter(p => p.watchOnly).map(p => 
 const QUOTE_SELECTOR = "0xc6a5026a"; // quoteExactInputSingle((address,address,uint256,uint24,uint160))
 const V4_SELECTOR = "0xaa9d21cb"; // quoteExactInputSingle(((address,address,uint24,int24,address),bool,uint128,bytes))
 const TAG = CHAIN.name.toLowerCase() + ": "; // prefix for chain errors in the stored rows
-// RPC_URL (optional secret) is tried before the public RPC. ARC_RPC_URL is still read, for older deployments.
-const endpointsOf = env => [env.RPC_URL, env.ARC_RPC_URL, CHAIN.rpc].filter(Boolean);
+// The public RPC is tried first and RPC_URL (optional secret) is the backup, so a free provider plan is only
+// spent when the public RPC fails. Set the PRIVATE_RPC_FIRST variable to "1" to try RPC_URL first instead.
+// ARC_RPC_URL is still read, for older deployments.
+const endpointsOf = env => {
+  const priv = [env.RPC_URL, env.ARC_RPC_URL].filter(Boolean);
+  return (env.PRIVATE_RPC_FIRST === "1" ? [...priv, CHAIN.rpc] : [CHAIN.rpc, ...priv]);
+};
 
 const word = v => BigInt(v).toString(16).padStart(64, "0");
 const addrWord = a => a.toLowerCase().replace(/^0x/, "").padStart(64, "0");
