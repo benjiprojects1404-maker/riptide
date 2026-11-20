@@ -1,6 +1,7 @@
 # Deploys the Worker to Cloudflare whenever worker/ changes on main (or when run by hand from the Actions tab).
 # Needs three repository secrets (Settings -> Secrets and variables -> Actions):
 #   CLOUDFLARE_API_TOKEN   a token made from Cloudflare's "Edit Cloudflare Workers" template
+#                          (RIPTIDE_GITHUB_DEPLOY is accepted as another name for it)
 #   CLOUDFLARE_ACCOUNT_ID  your Cloudflare account ID
 #   D1_DATABASE_ID         the ID of your "riptide" D1 database (Storage & Databases -> D1)
 # Without them (for example in a fork) the job skips itself. Secrets such as RPC_URL set in Cloudflare are kept.
@@ -23,7 +24,7 @@ jobs:
       - name: Check secrets are set
         id: check
         env:
-          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.RIPTIDE_GITHUB_DEPLOY }}
           ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           DBID: ${{ secrets.D1_DATABASE_ID }}
         run: |
@@ -45,7 +46,7 @@ jobs:
         if: steps.check.outputs.ok == '1'
         uses: cloudflare/wrangler-action@v3
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.RIPTIDE_GITHUB_DEPLOY }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: worker
           command: deploy
