@@ -39,8 +39,13 @@ jobs:
         env:
           DBID: ${{ secrets.D1_DATABASE_ID }}
         run: |
-          sed -i "s/PASTE_DATABASE_ID_HERE/$DBID/" worker/wrangler.toml
-          grep -q "$DBID" worker/wrangler.toml
+          ID=$(printf '%s' "$DBID" | tr -d '[:space:]')
+          if ! printf '%s' "$ID" | grep -Eq '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'; then
+            echo "::error::D1_DATABASE_ID should look like xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (36 characters); the saved value is ${#ID} characters. Copy the Database ID from Cloudflare -> Storage & Databases -> D1 -> riptide."
+            exit 1
+          fi
+          sed -i "s/PASTE_DATABASE_ID_HERE/$ID/" worker/wrangler.toml
+          grep -q "$ID" worker/wrangler.toml
 
       - name: Deploy
         if: steps.check.outputs.ok == '1'
