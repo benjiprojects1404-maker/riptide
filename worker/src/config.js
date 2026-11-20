@@ -10,6 +10,9 @@ export const CHAIN = {
   name: "Arc",
   chainId: 5042,
   rpc: "https://rpc.mainnet.arc.io",   // public fallback; set the RPC_URL secret for a private endpoint
+  // Arc's other public endpoints (docs.arc.io "RPC endpoints"); no key needed. Each run starts on a different one,
+  // so no single endpoint takes all the load and the private RPC_URL is only used when all of them refuse.
+  rpcs: ["https://rpc.drpc.mainnet.arc.io", "https://rpc.quicknode.mainnet.arc.io", "https://rpc.blockdaemon.mainnet.arc.io"],
   nativeDecimals: 18,
   nativeUsd: 1,
   explorer: null,                       // block explorer URL, optional
