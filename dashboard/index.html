@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Riptide · Arc price-gap monitor</title>
-<meta name="description" content="Riptide watches Uniswap pools on Arc against Binance and Coinbase every minute and logs every price gap after real costs. Paper trading only: it never trades.">
+<meta name="description" content="Riptide watches Uniswap pools on Arc against Binance and Coinbase every 5 minutes and logs every price gap after real costs. Paper trading only: it never trades.">
 <link rel="icon" href="mark.svg" type="image/svg+xml">
 <meta name="theme-color" content="#090a0a">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -82,7 +82,7 @@ footer{max-width:980px;margin:0 auto;padding:0 16px 40px;color:var(--muted);font
 
 <main>
   <h1>Riptide</h1>
-  <p class="lede" id="lede">Every minute, Riptide asks Uniswap pools on Arc what a $10 and a $1,000 trade would really return, compares that with Binance and Coinbase (or, for ARGUS and FAZE, with other Uniswap pools on Arc), and logs every gap after fees. It also keeps watch on Faze, a memecoin launchpad on Arc. It is a paper-trading experiment: it never trades, holds no funds and has no keys.</p>
+  <p class="lede" id="lede">Every 5 minutes, Riptide asks Uniswap pools on Arc what a $10 and a $1,000 trade would really return, compares that with Binance and Coinbase (or, for ARGUS and FAZE, with other Uniswap pools on Arc), and logs every gap after fees. It also keeps watch on Faze, a memecoin launchpad on Arc. It is a paper-trading experiment: it never trades, holds no funds and has no keys.</p>
 
   <div class="notice" id="setupNotice" hidden>The monitor isn't connected yet. Once the Riptide Worker is deployed, live numbers appear here.</div>
 
@@ -134,7 +134,7 @@ footer{max-width:980px;margin:0 auto;padding:0 16px 40px;color:var(--muted);font
 
   <section class="card">
     <h2>Rug alarm</h2>
-    <p class="sub" id="rugSub">Every watched pool is read each minute. A sudden price drop or a large share of liquidity pulled between two checks is logged here, and that pair is paused so it can't count as a trade.</p>
+    <p class="sub" id="rugSub">Every watched pool is read every 5 minutes. A sudden price drop or a large share of liquidity pulled between two checks is logged here, and that pair is paused so it can't count as a trade.</p>
     <div class="tablewrap"><table>
       <thead><tr><th>Time</th><th>Pair</th><th>Pool</th><th>What happened</th><th class="n">Change</th></tr></thead>
       <tbody id="rugBody"><tr><td colspan="5" class="empty">Loading…</td></tr></tbody>
@@ -215,11 +215,11 @@ function applyChain(j) {
   CHAIN_NAME = j.chain.name || "Arc";
   if (j.faze === false) {
     $("fazeEvents").hidden = true;
-    $("coinSub").textContent = `Coins with no exchange listing, read every minute from their ${CHAIN_NAME} pools. Monitoring only: nothing here is a signal to buy.`;
+    $("coinSub").textContent = `Coins with no exchange listing, read every 5 minutes from their ${CHAIN_NAME} pools. Monitoring only: nothing here is a signal to buy.`;
   }
   if (CHAIN_NAME === "Arc") return;
   document.querySelectorAll("[data-arc]").forEach(e => { e.hidden = true; e.style.display = "none"; });
-  $("lede").textContent = `Every minute, Riptide asks Uniswap pools on ${CHAIN_NAME} what a $10 and a $1,000 trade would really return, compares that with Binance and Coinbase (or, for tokens with no exchange listing, with other pools on the same chain), and logs every gap after fees. It is a paper-trading experiment: it never trades, holds no funds and has no keys.`;
+  $("lede").textContent = `Every 5 minutes, Riptide asks Uniswap pools on ${CHAIN_NAME} what a $10 and a $1,000 trade would really return, compares that with Binance and Coinbase (or, for tokens with no exchange listing, with other pools on the same chain), and logs every gap after fees. It is a paper-trading experiment: it never trades, holds no funds and has no keys.`;
   $("dataLine").textContent = `Data: ${CHAIN_NAME} (chain ${j.chain.chainId}, Uniswap pools), Binance and Coinbase public APIs`;
   document.title = document.title.replace(/\bArc\b/g, CHAIN_NAME);
   const walk = document.createTreeWalker(document.querySelector("main") || document.body, NodeFilter.SHOW_TEXT);
@@ -278,7 +278,7 @@ const KIND = { price_drop: "Price dropped", liquidity_drop: "Liquidity pulled", 
 async function loadEvents() {
   const j = await get(`/api/events?days=${days}`);
   const a = j.rugAlarm;
-  if (a) $("rugSub").textContent = `Every watched pool is read each minute. A price drop of ${Math.round(a.priceDrop * 100)}% or more, or ${Math.round(a.liquidityDrop * 100)}% or more of a pool's liquidity pulled, between two checks is logged here, and that pair is paused for ${a.pauseMinutes} minutes so it can't count as a trade.`;
+  if (a) $("rugSub").textContent = `Every watched pool is read every 5 minutes. A price drop of ${Math.round(a.priceDrop * 100)}% or more, or ${Math.round(a.liquidityDrop * 100)}% or more of a pool's liquidity pulled, between two checks is logged here, and that pair is paused for ${a.pauseMinutes} minutes so it can't count as a trade.`;
   const rows = j.rows || [];
   $("rugBody").innerHTML = rows.length ? rows.map(r => `<tr><td>${when(r.ts)}</td><td>${esc(r.pair)}</td><td>${esc(r.pool)}</td><td>${KIND[r.kind] || esc(r.kind)}</td><td class="n"><span class="neg">${(r.change * 100).toFixed(0)}%</span></td></tr>`).join("")
     : `<tr><td colspan="5" class="empty">No alarms in this period.</td></tr>`;
@@ -350,11 +350,11 @@ async function refresh(withLatest = true, heavy = true) {
   try {
     if (API.includes("REPLACE_WITH")) throw new Error("not configured");
     const last = withLatest ? await loadLatest() : true;
-    // Latest prices and rug alarms every minute; summary, chart and hits every 15 minutes (they change slowly).
+    // Latest prices and rug alarms every minute (new data every 5); summary, chart and hits every 15 minutes (they change slowly).
     await Promise.all(heavy ? [loadSummary(), loadOpps(), loadChart(), loadEvents().catch(() => {}), loadFaze().catch(() => {})] : [loadEvents().catch(() => {}), loadFaze().catch(() => {})]);
     $("setupNotice").hidden = true;
-    const fresh = last && last !== true && Date.now() / 1000 - last < 300;
-    $("statusPill").textContent = last === null ? "Waiting for first check" : fresh ? "Live · checks every minute" : last === true ? $("statusPill").textContent : "Paused";
+    const fresh = last && last !== true && Date.now() / 1000 - last < 720;
+    $("statusPill").textContent = last === null ? "Waiting for first check" : fresh ? "Live · checks every 5 minutes" : last === true ? $("statusPill").textContent : "Paused";
     $("statusPill").className = "pill" + (fresh || last === true ? " live" : "");
   } catch (e) {
     $("setupNotice").hidden = false;

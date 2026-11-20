@@ -2,7 +2,7 @@
 
 A read-only, minute-by-minute monitor of DEX price gaps on any EVM chain with Uniswap v3 (and optionally v4) pools.
 
-Every minute it asks the chain's Uniswap quoters what a $10 and a $1,000 trade would really return, compares that with
+Every 5 minutes it asks the chain's Uniswap quoters what a $10 and a $1,000 trade would really return, compares that with
 Binance or Coinbase (or, for tokens with no exchange listing, with another pool on the same chain), subtracts the
 exchange fee and live gas, and logs every gap to a Cloudflare D1 database. A rug alarm reads every watched pool each
 minute and pauses a pair when its price collapses or its liquidity is pulled. A dashboard and a self-writing weekly
@@ -19,7 +19,7 @@ to point it at another chain.
 ## What's in it
 
 ```
-worker/                Cloudflare Worker (cron every minute + JSON API)
+worker/                Cloudflare Worker (cron every 5 minutes + JSON API)
   src/config.js        everything chain-specific: chain, RPC, Uniswap contracts, pairs, watch list
   src/index.js         sampling, cost maths, storage, API
   src/rug.js           rug alarm (price drop / liquidity pulled, pair paused)
@@ -68,7 +68,7 @@ Cloudflare's servers are shared, so public RPCs sometimes rate-limit them. Give 
 npx wrangler secret put RPC_URL          # stored encrypted in Cloudflare; never commit it
 ```
 
-The Worker runs every minute, so it makes a lot of calls (about 100,000 a day with the default pairs). To keep a
+The Worker runs every 5 minutes, so it still makes a lot of calls (about 20,000 a day with the default pairs; every minute was about 100,000, more than Alchemy's free 30M CUs a month). To keep a
 free plan from running out, the public RPC in `config.js` is tried first and `RPC_URL` is only used when the
 public RPC fails. To use your own endpoint first instead (for example on a paid plan), set a variable
 `PRIVATE_RPC_FIRST` to `1` in `wrangler.toml` under `[vars]` or in the dashboard. (`ARC_RPC_URL` from older

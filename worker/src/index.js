@@ -2,7 +2,7 @@
 // Chain, contracts, pairs and the watch list are all in config.js; the shipped values are Arc mainnet (chain 5042).
 // PAPER TRADING ONLY. No wallet, no keys, no accounts, no orders. It only reads public prices.
 //
-// Every minute (cron) it:
+// Every 5 minutes (cron) it:
 //   1. asks Arc's Uniswap v3 QuoterV2 what a $10 and a $1,000 trade would return, both directions;
 //   2. reads the live bid/ask on the reference exchange (Binance or Coinbase);
 //   3. works out the gap both ways, minus the exchange fee and Arc gas, and stores it in D1.
@@ -326,7 +326,7 @@ async function api(url, env) {
     return json({ rows: r.results, rugAlarm: { priceDrop: PRICE_DROP, liquidityDrop: LIQ_DROP, pauseMinutes: PAUSE_MIN } });
   }
   if (p === "/api/faze") {
-    // Coins Riptide reads every minute (Faze coins, plus WATCH entries marked show: latest price and liquidity, and
+    // Coins Riptide reads every run (5 minutes) (Faze coins, plus WATCH entries marked show: latest price and liquidity, and
     // price 24 h ago), plus Faze launches and graduations.
     return json(await cached(`faze:${days}`, 60, async () => {
       const now = Math.floor(Date.now() / 1000);
