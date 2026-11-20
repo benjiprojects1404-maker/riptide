@@ -4,7 +4,7 @@ compatibility_date = "2026-10-01"
 
 # Runs every minute.
 [triggers]
-crons = ["* * * * *"]
+crons = ["*/5 * * * *"] # every 5 minutes (every minute used ~60M Alchemy CUs a month)
 
 # Create the database once with:  npx wrangler d1 create riptide  (see README.md)
 # then paste the database_id it prints below.

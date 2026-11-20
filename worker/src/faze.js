@@ -2,7 +2,7 @@
 //   - Launches: every coin created on Faze's bonding curve (BondingCurveV4 "Launched" events).
 //   - Graduations: every coin whose curve filled and moved into a locked Uniswap v4 pool
 //     (UniswapV4Migrator "MigratedV4" events).
-//   - After graduation, the new pool is read every minute for 7 days by the rug alarm (rug.js), so a sudden
+//   - After graduation, the new pool is read every run (5 minutes) for 7 days by the rug alarm (rug.js), so a sudden
 //     price collapse or liquidity leaving the "locked" pool is flagged.
 // Contract addresses were read from faze.fun's own app config and checked on Arc mainnet (2 Nov 2026).
 // Nothing here trades or signs anything; it only reads public logs and pool state.

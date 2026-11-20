@@ -2,7 +2,7 @@
 // Chain, contracts, pairs and the watch list are all in config.js; the shipped values are Arc mainnet (chain 5042).
 // PAPER TRADING ONLY. No wallet, no keys, no accounts, no orders. It only reads public prices.
 //
-// Every minute (cron) it:
+// Every 5 minutes (cron) it:
 //   1. asks Arc's Uniswap v3 QuoterV2 what a $10 and a $1,000 trade would return, both directions;
 //   2. reads the live bid/ask on the reference exchange (Binance or Coinbase);
 //   3. works out the gap both ways, minus the exchange fee and Arc gas, and stores it in D1.
@@ -22,12 +22,15 @@ export const WATCH_ONLY = new Set(VENUE_PAIRS.filter(p => p.watchOnly).map(p => 
 const QUOTE_SELECTOR = "0xc6a5026a"; // quoteExactInputSingle((address,address,uint256,uint24,uint160))
 const V4_SELECTOR = "0xaa9d21cb"; // quoteExactInputSingle(((address,address,uint24,int24,address),bool,uint128,bytes))
 const TAG = CHAIN.name.toLowerCase() + ": "; // prefix for chain errors in the stored rows
-// The public RPC is tried first and RPC_URL (optional secret) is the backup, so a free provider plan is only
-// spent when the public RPC fails. Set the PRIVATE_RPC_FIRST variable to "1" to try RPC_URL first instead.
-// ARC_RPC_URL is still read, for older deployments.
+// The public RPCs are tried first (starting on a different one each run, to spread the load) and RPC_URL
+// (optional secret) is the backup, so a free provider plan is only spent when every public RPC fails.
+// Set the PRIVATE_RPC_FIRST variable to "1" to try RPC_URL first instead. ARC_RPC_URL is still read, for older deployments.
 const endpointsOf = env => {
   const priv = [env.RPC_URL, env.ARC_RPC_URL].filter(Boolean);
-  return (env.PRIVATE_RPC_FIRST === "1" ? [...priv, CHAIN.rpc] : [CHAIN.rpc, ...priv]);
+  const pub = [CHAIN.rpc, ...(CHAIN.rpcs || [])];
+  const k = Math.floor(Date.now() / 300000) % pub.length;
+  const rotated = [...pub.slice(k), ...pub.slice(0, k)];
+  return (env.PRIVATE_RPC_FIRST === "1" ? [...priv, ...rotated] : [...rotated, ...priv]);
 };
 
 const word = v => BigInt(v).toString(16).padStart(64, "0");
@@ -326,7 +329,7 @@ async function api(url, env) {
     return json({ rows: r.results, rugAlarm: { priceDrop: PRICE_DROP, liquidityDrop: LIQ_DROP, pauseMinutes: PAUSE_MIN } });
   }
   if (p === "/api/faze") {
-    // Coins Riptide reads every minute (Faze coins, plus WATCH entries marked show: latest price and liquidity, and
+    // Coins Riptide reads every run (5 minutes) (Faze coins, plus WATCH entries marked show: latest price and liquidity, and
     // price 24 h ago), plus Faze launches and graduations.
     return json(await cached(`faze:${days}`, 60, async () => {
       const now = Math.floor(Date.now() / 1000);

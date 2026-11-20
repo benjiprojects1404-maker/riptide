@@ -5,11 +5,14 @@
 
 // The chain. chainId is checked against every RPC before its answers are trusted.
 // nativeUsd: price of the gas token in USD. A number (Arc pays gas in USDC, so 1), or a Coinbase product
-// such as "ETH-USD" to read the live price each minute.
+// such as "ETH-USD" to read the live price each run.
 export const CHAIN = {
   name: "Arc",
   chainId: 5042,
   rpc: "https://rpc.mainnet.arc.io",   // public fallback; set the RPC_URL secret for a private endpoint
+  // Arc's other public endpoints (docs.arc.io "RPC endpoints"); no key needed. Each run starts on a different one,
+  // so no single endpoint takes all the load and the private RPC_URL is only used when all of them refuse.
+  rpcs: ["https://rpc.drpc.mainnet.arc.io", "https://rpc.quicknode.mainnet.arc.io", "https://rpc.blockdaemon.mainnet.arc.io"],
   nativeDecimals: 18,
   nativeUsd: 1,
   explorer: null,                       // block explorer URL, optional
@@ -61,7 +64,7 @@ export const VENUE_PAIRS = [
     others: [ { kind: "v4", quote: USDC, qdec: 6, fee: 50000, tickSpacing: 100, hooks: ZERO_HOOK, label: "v4 5%" } ] },
 ];
 
-// Rug alarm watch list: every pool to read each minute. v3 pools by address; v4 pools by pool id.
+// Rug alarm watch list: every pool to read each run (every 5 minutes). v3 pools by address; v4 pools by pool id.
 // quote/qdec default to USDC/USDC_DEC. show: true lists the coin in the dashboard's coin watch table.
 // noAlarm: true reads the pool for prices but never raises alarms (FAZE's pools, as FAZE is watch-only).
 export const WATCH = [
@@ -90,7 +93,7 @@ export const FAZE = {
   launchpadHook: FAZE_HOOK,
   token: "0x394d38f807ee0027a182216f5e67a15ae441fa2e",
   chunk: 1900,          // Arc's public RPC refuses log ranges much over 2,000 blocks
-  chunksPerRun: 3,      // catch up at most ~5,700 blocks per minute
+  chunksPerRun: 3,      // catch up at most ~5,700 blocks per run (a 5-minute run is ~600 blocks)
   backfillDays: 3,      // on the first run, start this far back
   blocksPerSecond: 2,   // Arc makes ~2 blocks a second
   watchDays: 7,         // watch each graduated pool this long
