@@ -1,8 +1,10 @@
 name = "riptide"
 main = "src/index.js"
 compatibility_date = "2026-10-01"
+# Keep any plain-text variables set in the Cloudflare dashboard when deploying.
+keep_vars = true
 
-# Runs every minute.
+# Runs every 5 minutes.
 [triggers]
 crons = ["*/5 * * * *"] # every 5 minutes (every minute used ~60M Alchemy CUs a month)
 
