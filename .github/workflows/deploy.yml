@@ -1,0 +1,51 @@
+# Deploys the Worker to Cloudflare whenever worker/ changes on main (or when run by hand from the Actions tab).
+# Needs three repository secrets (Settings -> Secrets and variables -> Actions):
+#   CLOUDFLARE_API_TOKEN   a token made from Cloudflare's "Edit Cloudflare Workers" template
+#   CLOUDFLARE_ACCOUNT_ID  your Cloudflare account ID
+#   D1_DATABASE_ID         the ID of your "riptide" D1 database (Storage & Databases -> D1)
+# Without them (for example in a fork) the job skips itself. Secrets such as RPC_URL set in Cloudflare are kept.
+name: Deploy Worker
+
+on:
+  push:
+    branches: [main]
+    paths: ["worker/**", ".github/workflows/deploy.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-worker
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check secrets are set
+        id: check
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          DBID: ${{ secrets.D1_DATABASE_ID }}
+        run: |
+          if [ -n "$TOKEN" ] && [ -n "$ACCOUNT" ] && [ -n "$DBID" ]; then echo "ok=1" >> "$GITHUB_OUTPUT"
+          else echo "::notice::Cloudflare secrets not set; skipping deploy."; fi
+
+      - uses: actions/checkout@v4
+        if: steps.check.outputs.ok == '1'
+
+      - name: Put the database ID into wrangler.toml
+        if: steps.check.outputs.ok == '1'
+        env:
+          DBID: ${{ secrets.D1_DATABASE_ID }}
+        run: |
+          sed -i "s/PASTE_DATABASE_ID_HERE/$DBID/" worker/wrangler.toml
+          grep -q "$DBID" worker/wrangler.toml
+
+      - name: Deploy
+        if: steps.check.outputs.ok == '1'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: worker
+          command: deploy

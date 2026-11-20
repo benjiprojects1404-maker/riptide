@@ -59,6 +59,13 @@ Deploying with the same Worker name (`riptide`) and the same D1 database replace
 any secrets. Look up the database ID with `npx wrangler d1 list`, put it in `wrangler.toml`, then `npx wrangler deploy`.
 The schema upgrades itself on the first run.
 
+### Automatic deploys from GitHub (optional)
+
+`.github/workflows/deploy.yml` deploys the Worker whenever `worker/` changes on `main`, so merging a pull request is
+enough. Add three repository secrets (Settings → Secrets and variables → Actions): `CLOUDFLARE_API_TOKEN` (a
+Cloudflare token made from the "Edit Cloudflare Workers" template), `CLOUDFLARE_ACCOUNT_ID`, and `D1_DATABASE_ID`.
+Without them the job skips itself. You can also run it by hand from the Actions tab ("Deploy Worker" → Run workflow).
+
 ### A private RPC (optional)
 
 Cloudflare's servers are shared, so public RPCs sometimes rate-limit them. Give the Worker its own endpoint
